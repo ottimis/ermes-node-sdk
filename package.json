@@ -1,0 +1,56 @@
+{
+  "name": "@ottimis/ermes-node-sdk",
+  "version": "2.0.0",
+  "description": "Node/TypeScript SDK for the Ermes notification platform — port of ermes-php-sdk",
+  "keywords": [
+    "ermes",
+    "notification",
+    "sdk",
+    "ottimis",
+    "jwt",
+    "jwks",
+    "socket.io"
+  ],
+  "license": "ISC",
+  "author": "Ottimis",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ottimis/ermes-node-sdk.git"
+  },
+  "homepage": "https://github.com/ottimis/ermes-node-sdk#readme",
+  "bugs": {
+    "url": "https://github.com/ottimis/ermes-node-sdk/issues"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "test": "jest",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "axios": "^1.5.0",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/node": "^24.0.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "typescript": "^5.7.2"
+  }
+}
