@@ -4,7 +4,7 @@ Node/TypeScript SDK for the Ermes notification platform. Port of [`ermes-php-sdk
 
 ## Requirements
 
-- Node.js 18+
+- Node.js 24+
 - RSA private key (PEM) for signing user JWTs
 - Credentials issued by the Ermes core admin: `apiKey`, `apiSecret`, `tenantKey`, `applicationId`
 

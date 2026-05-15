@@ -1,6 +1,6 @@
 {
   "name": "@ottimis/ermes-node-sdk",
-  "version": "2.0.0",
+  "version": "0.1.0",
   "description": "Node/TypeScript SDK for the Ermes notification platform — port of ermes-php-sdk",
   "keywords": [
     "ermes",
