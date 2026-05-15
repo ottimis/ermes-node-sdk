@@ -6,6 +6,7 @@ Node/TypeScript SDK for the Ermes notification platform. Port of [`ermes-php-sdk
 
 - Node.js 18+
 - RSA private key (PEM) for signing user JWTs
+- Credentials issued by the Ermes core admin: `apiKey`, `apiSecret`, `tenantKey`, `applicationId`
 
 ## Installation
 
@@ -14,6 +15,70 @@ npm install @ottimis/ermes-node-sdk
 # or
 pnpm add @ottimis/ermes-node-sdk
 ```
+
+---
+
+## Quick start
+
+End-to-end integration in 4 steps:
+
+### 1. Generate an RSA key pair
+
+```bash
+openssl genrsa -out ermes-private.pem 2048
+openssl rsa -in ermes-private.pem -pubout -out ermes-public.pem
+```
+
+Share `ermes-public.pem` (or your JWKS endpoint URL) with the Ermes core admin. Keep the private key in your backend — never expose it client-side.
+
+### 2. Set environment variables
+
+Create `.env` (do not commit):
+
+```dotenv
+NOTIFICATION_CORE_URL=https://ermes.yourcompany.com
+NOTIFICATION_TENANT_KEY=myapp
+NOTIFICATION_APPLICATION_ID=my-backoffice
+NOTIFICATION_ISSUER=https://api.yourcompany.com
+NOTIFICATION_API_KEY=ak_xxxxxxxxxxxxxxx
+NOTIFICATION_API_SECRET=as_yyyyyyyyyyyyyyy
+NOTIFICATION_RSA_PRIVATE_KEY_PATH=/run/secrets/ermes-private.pem
+NOTIFICATION_KID=myapp-key-1
+```
+
+Alternative (inline key, suitable for Heroku/Vercel/Docker secrets without volume mount):
+
+```dotenv
+NOTIFICATION_RSA_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIE...\n-----END PRIVATE KEY-----\n"
+```
+
+### 3. Instantiate the client (single shared instance)
+
+```ts
+import { NotificationClient, NotificationConfig } from '@ottimis/ermes-node-sdk';
+
+export const ermes = new NotificationClient(NotificationConfig.fromEnv());
+```
+
+### 4. Expose JWKS + send your first event
+
+```ts
+// HTTP route: GET /.well-known/jwks.json
+app.get('/.well-known/jwks.json', (_req, res) => res.json(ermes.getJwks()));
+
+// Send an event
+await ermes.sendEvent({
+  topic:           'contract.termination.completed',
+  title:           'Cessazione completata',
+  body:            'Contratto C-1234 elaborato.',
+  severity:        'success',
+  entity_type:     'contract',
+  entity_id:       'C-1234',
+  recipient_users: ['user_42'],
+});
+```
+
+That's it. Frontend connects via Socket.IO using a token from `client.createUserToken(userId)` — see [User tokens](#user-tokens-socketio--inbox).
 
 ---
 
@@ -91,6 +156,7 @@ const event: EventInput = {
   entity_id:       'C-1234',
   recipient_users: ['user_42'],
   payload:         { contract_id: 'C-1234' },
+  event_name:      'notification.new', // optional — defaults to 'notification.new'
 };
 
 const result: SendEventResult = await client.sendEvent(event);
@@ -98,7 +164,21 @@ const result: SendEventResult = await client.sendEvent(event);
 // result.body    — decoded response body (unknown)
 ```
 
-`tenant_key`, `application_id`, and `event_id` are injected automatically. Any non-202 response throws a typed error (see [Error handling](#error-handling)).
+`tenant_key`, `application_id`, and `event_id` are injected automatically. If `event_name` is omitted it defaults to `'notification.new'` — the event name the official Ermes FE client subscribes to. Override only if you know the consumer listens to a different name. Any non-202 response throws a typed error (see [Error handling](#error-handling)).
+
+### EventInput fields
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `topic` | `string` | yes | Hierarchical dot-path identifier (e.g. `contract.termination.completed`). Used for filtering and routing. |
+| `title` | `string` | yes | Human-readable title (or i18n key). |
+| `body` | `string` | no | Human-readable body (or i18n key). |
+| `severity` | `'info' \| 'warning' \| 'error' \| 'success'` | no | Defaults to `'info'` on the BE side. |
+| `entity_type` | `string` | no | Domain entity type the notification refers to. |
+| `entity_id` | `string` | no | Domain entity id. |
+| `recipient_users` | `string[]` | yes | User ids to deliver to. |
+| `payload` | `Record<string, unknown>` | no | Arbitrary structured data forwarded to the FE. |
+| `event_name` | `string` | no | Defaults to `'notification.new'`. Name the WS client subscribes to. |
 
 ---
 
@@ -124,7 +204,13 @@ import { io } from 'socket.io-client';
 const socket = io('wss://ermes.yourcompany.com', {
   auth: { token },
 });
+
+socket.on('notification.new', (notification) => {
+  // notification.title, notification.body, notification.payload, ...
+});
 ```
+
+The FE client subscribes to `notification.new` — this is why `event_name` defaults to that value when sending. Mint the token server-side via `createUserToken(userId)` and ship it to the browser through your existing auth flow; never expose `apiKey`/`apiSecret`/`privateKeyPem` to the client.
 
 ---
 

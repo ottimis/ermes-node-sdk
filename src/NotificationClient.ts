@@ -20,6 +20,7 @@ import type { HttpResponseRaw } from './types/http';
 
 const USER_TOKEN_TTL_SECONDS = 9 * 365 * 24 * 3600;
 const DEFAULT_ROLES: ReadonlyArray<string> = ['operator'];
+const DEFAULT_EVENT_NAME = 'notification.new';
 
 export class NotificationClient {
   private readonly http: HttpClient;
@@ -77,6 +78,7 @@ export class NotificationClient {
       tenant_key: this.config.tenantKey,
       application_id: this.config.applicationId,
       ...event,
+      event_name: event.event_name ?? DEFAULT_EVENT_NAME,
     };
     const url = `${this.config.coreUrl}/api/v1/events`;
     const res = await this.http.post(url, payload, {

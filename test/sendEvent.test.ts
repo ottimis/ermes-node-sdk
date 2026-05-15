@@ -76,6 +76,45 @@ describe('NotificationClient.sendEvent', () => {
     expect(res.body).toEqual({ accepted: true });
   });
 
+  it("defaults event_name to 'notification.new' when omitted", async () => {
+    const client = makeClient();
+    let captured: Record<string, unknown> = {};
+    jest
+      .spyOn(HttpClient.prototype, 'post')
+      .mockImplementation(async (_url, data) => {
+        captured = data as Record<string, unknown>;
+        return { body: '{}', statusCode: 202, headers: {} };
+      });
+
+    await client.sendEvent({
+      topic: 'x.y',
+      title: 'Test',
+      recipient_users: ['u1'],
+    });
+
+    expect(captured['event_name']).toBe('notification.new');
+  });
+
+  it('preserves caller-provided event_name', async () => {
+    const client = makeClient();
+    let captured: Record<string, unknown> = {};
+    jest
+      .spyOn(HttpClient.prototype, 'post')
+      .mockImplementation(async (_url, data) => {
+        captured = data as Record<string, unknown>;
+        return { body: '{}', statusCode: 202, headers: {} };
+      });
+
+    await client.sendEvent({
+      topic: 'x.y',
+      title: 'Test',
+      recipient_users: ['u1'],
+      event_name: 'custom.event',
+    });
+
+    expect(captured['event_name']).toBe('custom.event');
+  });
+
   it('throws ErmesUnauthorizedError on 401', async () => {
     const client = makeClient();
     jest.spyOn(HttpClient.prototype, 'post').mockResolvedValue({

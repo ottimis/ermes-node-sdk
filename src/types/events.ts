@@ -9,6 +9,7 @@ export interface EventInput {
   entity_id?: string;
   recipient_users: string[];
   payload?: Record<string, unknown>;
+  /** Defaults to 'notification.new' if omitted. */
   event_name?: string;
 }
 
