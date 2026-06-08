@@ -113,4 +113,63 @@ describe('NotificationClient inbox methods', () => {
       expect((e as ErmesRateLimitError).retryAfterSeconds).toBe(7);
     }
   });
+
+  it('getNotifications forwards date-range and deleted filters as query string', async () => {
+    const client = makeClient();
+    const get = jest.spyOn(HttpClient.prototype, 'get').mockResolvedValue({
+      body: JSON.stringify({
+        items: [],
+        pagination: { page: 1, limit: 20, total: 0, nextCursor: null },
+      }),
+      statusCode: 200,
+      headers: {},
+    });
+    await client.getNotifications('u1', {
+      created_after: '2026-06-07T00:00:00.000Z',
+      created_before: '2026-06-08T00:00:00.000Z',
+      deleted: 'only',
+    });
+    const url = get.mock.calls[0][0] as string;
+    expect(url).toContain('created_after=2026-06-07T00%3A00%3A00.000Z');
+    expect(url).toContain('created_before=2026-06-08T00%3A00%3A00.000Z');
+    expect(url).toContain('deleted=only');
+  });
+
+  it('deleteNotification hits the /delete endpoint and resolves on 204', async () => {
+    const client = makeClient();
+    const post = jest.spyOn(HttpClient.prototype, 'post').mockResolvedValue({
+      body: '',
+      statusCode: 204,
+      headers: {},
+    });
+    await expect(client.deleteNotification('uuid-1', 'u1')).resolves.toBeUndefined();
+    expect(post.mock.calls[0][0]).toBe(
+      'https://ermes.test/api/v1/notifications/uuid-1/delete',
+    );
+  });
+
+  it('deleteBulk posts notification_uuids to the bulk delete endpoint', async () => {
+    const client = makeClient();
+    const post = jest.spyOn(HttpClient.prototype, 'post').mockResolvedValue({
+      body: '',
+      statusCode: 204,
+      headers: {},
+    });
+    await client.deleteBulk(['a', 'b'], 'u1');
+    expect(post.mock.calls[0][0]).toBe('https://ermes.test/api/v1/notifications/delete');
+    expect(post.mock.calls[0][1]).toEqual({ notification_uuids: ['a', 'b'] });
+  });
+
+  it('restoreNotification hits the /restore endpoint', async () => {
+    const client = makeClient();
+    const post = jest.spyOn(HttpClient.prototype, 'post').mockResolvedValue({
+      body: '',
+      statusCode: 204,
+      headers: {},
+    });
+    await client.restoreNotification('uuid-1', 'u1');
+    expect(post.mock.calls[0][0]).toBe(
+      'https://ermes.test/api/v1/notifications/uuid-1/restore',
+    );
+  });
 });

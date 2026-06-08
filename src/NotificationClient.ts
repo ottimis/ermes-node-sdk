@@ -147,6 +147,28 @@ export class NotificationClient {
     this.ensureStatus(res, url, 'POST', [200, 204]);
   }
 
+  async deleteNotification(uuid: string, userId: string): Promise<void> {
+    const url = `${this.config.coreUrl}/api/v1/notifications/${encodeURIComponent(uuid)}/delete`;
+    const res = await this.http.post(url, {}, this.bearerHeaders(userId));
+    this.ensureStatus(res, url, 'POST', [200, 204]);
+  }
+
+  async deleteBulk(uuids: string[], userId: string): Promise<void> {
+    const url = `${this.config.coreUrl}/api/v1/notifications/delete`;
+    const res = await this.http.post(
+      url,
+      { notification_uuids: uuids },
+      this.bearerHeaders(userId),
+    );
+    this.ensureStatus(res, url, 'POST', [200, 204]);
+  }
+
+  async restoreNotification(uuid: string, userId: string): Promise<void> {
+    const url = `${this.config.coreUrl}/api/v1/notifications/${encodeURIComponent(uuid)}/restore`;
+    const res = await this.http.post(url, {}, this.bearerHeaders(userId));
+    this.ensureStatus(res, url, 'POST', [200, 204]);
+  }
+
   private ensureStatus(
     res: HttpResponseRaw,
     url: string,

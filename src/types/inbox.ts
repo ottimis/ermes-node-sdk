@@ -20,11 +20,20 @@ export interface Pagination {
   nextCursor: string | null;
 }
 
+/** Visibilità delle notifiche cancellate (soft-delete). Default backend: 'exclude'. */
+export type DeletedFilter = 'exclude' | 'only' | 'all';
+
 export interface ListParams {
   status?: 'unread' | 'all';
   page?: number;
   limit?: number;
   topic?: string;
+  /** ISO 8601 — solo notifiche con created_at >= valore (inclusivo). */
+  created_after?: string;
+  /** ISO 8601 — solo notifiche con created_at <= valore (inclusivo). */
+  created_before?: string;
+  /** Visibilità cancellate. Assente => backend usa 'exclude' (retrocompatibile). */
+  deleted?: DeletedFilter;
 }
 
 export interface InboxListResponse {
@@ -35,6 +44,12 @@ export interface InboxListResponse {
 export interface SyncParams {
   after?: string;
   limit?: number;
+  /** ISO 8601 — solo notifiche con created_at >= valore (inclusivo). */
+  created_after?: string;
+  /** ISO 8601 — solo notifiche con created_at <= valore (inclusivo). */
+  created_before?: string;
+  /** Visibilità cancellate. Assente => backend usa 'exclude' (retrocompatibile). */
+  deleted?: DeletedFilter;
 }
 
 export interface SyncResponse {
